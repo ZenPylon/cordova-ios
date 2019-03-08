@@ -122,13 +122,17 @@ module.exports.run = function (buildOpts) {
         if (!fs.existsSync(buildOpts.buildConfig)) {
             return Q.reject('Build config file does not exist:' + buildOpts.buildConfig);
         }
+        events.emit('log', 'ZenPylon: This is a test log');
         events.emit('log', 'Reading build config file:', path.resolve(buildOpts.buildConfig));
         var contents = fs.readFileSync(buildOpts.buildConfig, 'utf-8');
         var buildConfig = JSON.parse(contents.replace(/^\ufeff/, '')); // Remove BOM
+        events.emit('log', 'ZenPylon: parsed buildconfig');
         if (buildConfig.ios) {
+            events.emit('log', 'ZenPylon: build config has ios');
             var buildType = buildOpts.release ? 'release' : 'debug';
             var config = buildConfig.ios[buildType];
             if (config) {
+                events.emit('log', 'ZenPylon: adding config keys');
                 ['codeSignIdentity', 'codeSignResourceRules', 'provisioningProfile', 'developmentTeam', 'packageType', 'buildFlag', 'iCloudContainerEnvironment', 'automaticProvisioning'].forEach(
                     function (key) {
                         buildOpts[key] = buildOpts[key] || config[key];
@@ -139,6 +143,7 @@ module.exports.run = function (buildOpts) {
 
     return require('./list-devices').run()
         .then(function (devices) {
+            events.emit('log', 'ZenPylon: devices are', devices);
             if (devices.length > 0 && !(buildOpts.emulator)) {
                 // we also explicitly set device flag in options as we pass
                 // those parameters to other api (build as an example)
@@ -148,6 +153,7 @@ module.exports.run = function (buildOpts) {
         }).then(function () {
             // CB-12287: Determine the device we should target when building for a simulator
             if (!buildOpts.device) {
+                events.emit('log', 'ZenPylon: !buildOpts.device');
                 var newTarget = buildOpts.target || '';
 
                 if (newTarget) {
@@ -158,12 +164,14 @@ module.exports.run = function (buildOpts) {
                 var promise = require('./list-emulator-build-targets').targetForSimIdentifier(newTarget);
                 return promise.then(function (theTarget) {
                     if (!theTarget) {
+                        events.emit('log', 'ZenPylon: !theTarget');
                         return getDefaultSimulatorTarget().then(function (defaultTarget) {
                             emulatorTarget = defaultTarget.name;
                             events.emit('log', 'Building for ' + emulatorTarget + ' Simulator');
                             return emulatorTarget;
                         });
                     } else {
+                        events.emit('log', 'ZenPylon: theTarget is truthy');
                         emulatorTarget = theTarget.name;
                         events.emit('log', 'Building for ' + emulatorTarget + ' Simulator');
                         return emulatorTarget;
